@@ -16,11 +16,11 @@
 ## ✨ Features
 
 * 🚀 **Zero Dependencies**: No need to install Python, Node.js, or any web services on the server side. Only SSH and `nvidia-smi` are required.
-* 👀 **At a Glance**: The menu bar persistently displays the number of idle GPUs (e.g., `GPU: 2/4 Free`).
-* 📊 **Detailed Data**: Click the dropdown to show each card's name, memory usage, and utilization rate.
+* 👀 **At a Glance**: The menu bar persistently displays the total number of idle GPUs across all configured servers (e.g., `GPU: 5/12 Free @ 3/3 Servers`).
+* 📊 **Detailed Data**: Click the dropdown to show each server separately, including every GPU's name, VRAM usage in GB, utilization rate, and current user.
 * 🎨 **Smart Coloring**: Idle GPUs are marked with green 🟢, while busy ones are marked with red 🔴.
 * 🔤 **Perfect Alignment**: Uses monospaced font (Menlo) to ensure numbers are displayed neatly.
-* 🖥️ **Quick Terminal**: One-click to open an SSH terminal connection to the server.
+* 🖥️ **Quick Terminal**: One-click to open an SSH terminal connection to each configured server.
 
 ---
 
@@ -67,15 +67,34 @@ Modify the configuration area at the top of the script:
 
 ```Bash
 # ================= CONFIGURATION AREA =================
-# 1. Change to your server's SSH username and IP address
-HOST="user@your_server_ip"
+# Default SSH private key. A server can override this in SERVERS.
+ID_FILE="/Users/YOUR_USERNAME/.ssh/id_ed25519"
 
-# 2. Change to the absolute path of your local Mac SSH private key
-# Usually ~/.ssh/id_rsa or ~/.ssh/id_ed25519
-ID_FILE="/Users/YOUR_USERNAME/.ssh/id_rsa"
+# Multi-server format:
+#   "Display Name|SSH user and address|SSH private key path"
+#
+# The third field can be empty. If empty, ID_FILE will be used.
+SERVERS=(
+  "GPU-01|user@192.0.2.10|$ID_FILE"
+  "GPU-02|user@192.0.2.11|$ID_FILE"
+  "GPU-03|user@192.0.2.12|/Users/YOUR_USERNAME/.ssh/id_rsa"
+)
 # ======================================================
-Save the file. SwiftBar will usually detect the change and refresh automatically. You can also manually click the menu bar -> Refresh All.
 ```
+
+Save the file. SwiftBar will usually detect the change and refresh automatically. You can also manually click the menu bar -> Refresh All.
+
+The menu bar title shows the aggregate state of all configured servers. For example, `GPU: 5/12 Free @ 3/3 Servers` means 5 of 12 GPUs are idle and all 3 servers are online. In the dropdown, every server has its own section header so GPUs from different machines are clearly separated.
+
+The dropdown table uses GB to reduce width:
+
+```text
+GPU  NAME             VRAM        UTIL  USER
+🟢 [0] A100             1.0G/40.0G    0%  -
+🔴 [1] A100            38.0G/40.0G   88%  user1,user2
+```
+
+The `USER` column is collected from running NVIDIA compute processes. If a GPU has no running process, it shows `-`.
 
 ---
 
@@ -83,8 +102,18 @@ Save the file. SwiftBar will usually detect the change and refresh automatically
 Q: Menu bar shows "GPU: Offline 🔴"? 
 A: This means the SSH connection failed. Please check:
 Whether your network can connect to the server.
-Whether the HOST and ID_FILE paths in the script are correct.
+Whether the server entry in SERVERS and the ID_FILE paths in the script are correct.
 Click the menu to view the red error message details. If it says "Host verification failed," please connect to the server manually once in the terminal and type yes to accept the host fingerprint.
+
+Q: How do I add more servers?
+A: Add more lines to the SERVERS array:
+```bash
+SERVERS=(
+  "Lab-A|user@192.0.2.10|$ID_FILE"
+  "Lab-B|user@192.0.2.11|$ID_FILE"
+)
+```
+Each line becomes an independent section in the dropdown.
 
 Q: Why is the text in the menu gray? 
 A: Ensure you are using the latest version of the script. The script must include interactive attributes like refresh=true or shell=... for macOS to render it in the normal highlight color.
@@ -114,11 +143,11 @@ MIT License © 2026 zeyu
 
 **特点：**
 * 🚀 **零依赖**：服务器端无需安装 Python、Node.js 或任何 Web 服务。只要有 SSH 和 `nvidia-smi` 即可。
-* 👀 **一目了然**：菜单栏常驻显示空闲 GPU 数量（例如 `GPU: 2/4 Free`）。
-* 📊 **详细数据**：点击下拉展示每张卡的名称、显存占用和利用率。
+* 👀 **一目了然**：菜单栏常驻显示所有已配置服务器的总空闲 GPU 数量（例如 `GPU: 5/12 Free @ 3/3 Servers`）。
+* 📊 **详细数据**：点击下拉按服务器分组展示每张卡的名称、GB 单位显存占用、利用率和当前使用者。
 * 🎨 **智能着色**：空闲显卡显示绿色 🟢，忙碌显卡显示红色 🔴。
 * 🔤 **完美对齐**：使用等宽字体 (Menlo)，数字显示整齐治愈。
-* 🖥️ **快捷终端**：一键打开 SSH 终端连接到服务器。
+* 🖥️ **快捷终端**：一键打开 SSH 终端连接到每台已配置服务器。
 
 ---
 
@@ -167,15 +196,33 @@ MIT License © 2026 zeyu
 
 ```bash
 # ================= 配置区域 =================
-# 1. 修改为你的服务器 SSH 用户名和 IP 地址
-HOST="user@your_server_ip"
+# 默认 SSH 私钥。如果某台服务器没有单独指定私钥，会使用这个路径。
+ID_FILE="/Users/你的用户名/.ssh/id_ed25519"
 
-# 2. 修改为你 Mac 本地的 SSH 私钥绝对路径
-# 通常是 ~/.ssh/id_rsa 或 ~/.ssh/id_ed25519
-ID_FILE="/Users/你的用户名/.ssh/id_rsa"
+# 多服务器配置格式：
+#   "显示名称|SSH 用户和地址|SSH 私钥路径"
+#
+# 第 3 段私钥路径可以留空，留空时使用上面的 ID_FILE。
+SERVERS=(
+  "GPU-01|user@192.0.2.10|$ID_FILE"
+  "GPU-02|user@192.0.2.11|$ID_FILE"
+  "GPU-03|user@192.0.2.12|/Users/你的用户名/.ssh/id_rsa"
+)
 # ===========================================
 ```
 保存文件。SwiftBar 通常会自动检测到更改并刷新，你也可以手动点击菜单栏 -> Refresh All。
+
+菜单栏标题显示所有服务器的汇总状态。例如 `GPU: 5/12 Free @ 3/3 Servers` 表示 12 张 GPU 中有 5 张空闲，并且 3 台服务器全部在线。下拉菜单中每台服务器都有独立分组标题，便于区分不同机器上的 GPU。
+
+下拉表格使用 GB 减少显示宽度：
+
+```text
+GPU  NAME             VRAM        UTIL  USER
+🟢 [0] A100             1.0G/40.0G    0%  -
+🔴 [1] A100            38.0G/40.0G   88%  user1,user2
+```
+
+`USER` 列来自 NVIDIA compute 进程对应的系统用户；如果该 GPU 没有运行中的进程，则显示 `-`。
 
 ---
 
@@ -183,8 +230,18 @@ ID_FILE="/Users/你的用户名/.ssh/id_rsa"
 Q: 菜单栏显示 "GPU: Offline 🔴"？ 
 A: 这意味着 SSH 连接失败。请检查：
 你的网络能否连接到服务器。
-脚本中 HOST 和 ID_FILE 路径是否正确。
+脚本中 SERVERS 配置和 ID_FILE 路径是否正确。
 点击菜单，查看红色的报错信息详情。如果是 "Host verification failed"，请先在终端手动连接一次服务器并输入 yes 接受主机指纹。
+
+Q: 如何添加更多服务器？
+A: 在 SERVERS 数组里继续增加配置行即可：
+```bash
+SERVERS=(
+  "Lab-A|user@192.0.2.10|$ID_FILE"
+  "Lab-B|user@192.0.2.11|$ID_FILE"
+)
+```
+每一行都会在下拉菜单中显示为一个独立的服务器分组。
 
 Q: 为什么菜单里的字是灰色的？ 
 A: 请确保你使用的是最新版的脚本。脚本中必须包含 refresh=true 或 shell=... 等交互属性，macOS 才会将其渲染为正常的高亮颜色。
